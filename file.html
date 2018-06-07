@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta content="width=device-width,user-scalable=no" name="viewport"/>
+    <title>LOGIN</title>
+    <style>
+        *{
+            margin:0;
+            padding: 0;
+        }
+        html,body {
+            height: 100%;
+        }
+        input,button{
+            line-height:26px;
+            font-size:14px;
+        }
+        input{
+            border:1px solid #efefef;
+            background: #efefef;
+        }
+        button{
+            padding:0 3px;
+            background: #0a93d5;
+
+        }
+    </style>
+    <script src="lib/jquery/jquery.js"></script>
+    <script src="lib/js-base64/base64.min.js"></script>
+
+</head>
+<body>
+<div style="height: 60px;">
+    <input type="file"  id="my_file"> <button id="start">开始启动执行</button>
+    <div>总共<span id="acc_total">0</span>个号码，已处理<span id="acc_ed">0</span>个</div>
+</div>
+<iframe id="page_iframe" style="width: 100%; border: 0; ">
+    在iframe 中
+</iframe>
+<iframe id="logout_iframe" style="width: 0; border: 0; ">></iframe>
+<script>
+    var accList = [];
+    var timer = null;
+    var total = 0;
+    $(function() {
+        //        document.getElementsByTagName('body')[0].style.height = window.innerHeight+'px';
+        $iframe = $('#page_iframe');
+        $iframe.height($(window).height()-60);
+
+        $logout_iframe = $('#logout_iframe');
+        $logout_iframe.on('load',function(){
+            var s = accList.shift();
+            console.log(s);
+            var mp = '';
+            if(s.split(',').length>1){
+                mp = Base64.encode(Base64.encode(s.split(',')[0]+','+s.split(',')[1]));
+            }else{
+                mp = Base64.encode(Base64.encode(s+',123456'));
+            }
+            console.log(mp);
+            console.log(Base64.decode(Base64.decode(mp)));
+            var reurl =  "http://h5.nty.tv189.com/csite/tysx/uc/login-by-pass?mp="+mp;
+            $iframe.attr('src',reurl);
+            $('#acc_ed').html(total - accList.length);
+            if(accList.length === 0 && timer != null){
+                clearInterval(timer);
+                timer = null;
+            }
+
+        });
+
+        //获取参数
+        var time =  5000;
+        var loadIframe = function(){
+            $logout_iframe.attr('src','http://h5.nty.tv189.com/api/portal/user/logout');
+
+        };
+
+        $("#my_file").on('change', function (source) {
+            var file = $('#my_file')[0].files[0];
+//            console.log(file);
+            var reader = new FileReader();
+            //将文件以文本形式读入页面
+            reader.readAsText(file, "gb2312");
+            reader.onload = function (e) {
+                accList = e.target.result.split("\n");
+                total = accList.length;
+                $('#acc_total').html(total);
+                console.log(accList);
+            }
+        });
+        $('#start').on('click',function(){
+            if(accList.length <= 0){
+                alert('请先选择文件');
+                return;
+            }
+
+            if(accList.length > 0 &&  $('#acc_ed') > 0){
+                alert('正在处理中，请不要重复操作');
+                return;
+            }
+
+            loadIframe();
+            timer = setInterval(function(){
+                loadIframe();
+            },5000);
+
+        });
+        window.onbeforeunload=function(){
+            return "你确定要离开吗";
+        };
+
+
+    });
+</script>
+</body>
+</html>
+
+
